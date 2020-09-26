@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Easy IP Blocker
  * Version: 1.0.0
- * Plugin URI: https://carlalberto.code.blog/
+ * Plugin URI: https://wordpress.org/plugins/easy-ip-blocker/
  * Description: Easily blocks IPs
  * Author: Carl Alberto
  * Author URI: https://carlalberto.code.blog/
