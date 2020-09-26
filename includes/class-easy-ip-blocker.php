@@ -103,12 +103,33 @@ class Easy_IP_Blocker {
 	public $script_suffix;
 
 	/**
+	 * Main Easy_IP_Blocker Instance
+	 *
+	 * Ensures only one instance of Easy_IP_Blocker is loaded or can be loaded.
+	 *
+	 * @param string $file File instance.
+	 * @param string $version Version parameter.
+	 *
+	 * @return Object Easy_IP_Blocker instance
+	 * @see Easy_IP_Blocker()
+	 * @since 1.0.0
+	 * @static
+	 */
+	public static function instance( $file = '', $version = '1.0.1' ) {
+		if ( is_null( self::$_instance ) ) {
+			self::$_instance = new self( $file, $version );
+		}
+
+		return self::$_instance;
+	} // End instance ()
+
+	/**
 	 * Constructor funtion.
 	 *
 	 * @param string $file File constructor.
 	 * @param string $version Plugin version.
 	 */
-	public function __construct( $file = '', $version = '1.0.0' ) {
+	public function __construct( $file = '', $version = '1.0.1' ) {
 		$this->_version = $version;
 		$this->_token   = 'easy_ip_blocker';
 
@@ -208,27 +229,6 @@ class Easy_IP_Blocker {
 		load_textdomain( $domain, WP_LANG_DIR . '/' . $domain . '/' . $domain . '-' . $locale . '.mo' );
 		load_plugin_textdomain( $domain, false, dirname( plugin_basename( $this->file ) ) . '/lang/' );
 	} // End load_plugin_textdomain ()
-
-	/**
-	 * Main Easy_IP_Blocker Instance
-	 *
-	 * Ensures only one instance of Easy_IP_Blocker is loaded or can be loaded.
-	 *
-	 * @param string $file File instance.
-	 * @param string $version Version parameter.
-	 *
-	 * @return Object Easy_IP_Blocker instance
-	 * @see Easy_IP_Blocker()
-	 * @since 1.0.0
-	 * @static
-	 */
-	public static function instance( $file = '', $version = '1.0.0' ) {
-		if ( is_null( self::$_instance ) ) {
-			self::$_instance = new self( $file, $version );
-		}
-
-		return self::$_instance;
-	} // End instance ()
 
 	/**
 	 * Cloning is forbidden.
