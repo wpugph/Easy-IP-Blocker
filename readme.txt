@@ -1,5 +1,5 @@
 === Easy IP Blocker ===
-Contributors: carlalberto
+Contributors: carl-alberto
 Donate link: https://wordpress.org/plugins/easy-ip-blocker/
 Tags: wordpress, plugin, 
 Requires at least: 5.0
@@ -8,11 +8,11 @@ Stable tag: 1.0.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Easily blocks IPs
+Easily blocks IPs from the WP dashboard
 
 == Description ==
 
-Easily blocks IPs
+Easily blocks IPs from the WP dashboard
 
 == Installation ==
 
