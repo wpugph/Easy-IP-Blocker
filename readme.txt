@@ -3,8 +3,8 @@ Contributors: carl-alberto
 Donate link: https://wordpress.org/plugins/easy-ip-blocker/
 Tags: wordpress, plugin, 
 Requires at least: 5.0
-Tested up to: 5.8.1
-Stable tag: 1.0.3
+Tested up to: 6.0.3
+Stable tag: 1.0.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -29,6 +29,10 @@ Installing "Easy IP Blocker" can be done either by searching for "Easy IP Blocke
 Simply created to easily blocks IPs in your WP installation.
 
 == Changelog ==
+
+= 1.0.4 =
+* 2022-10-24
+* Version bump to WordPress versino 6.0.3 compatibility
 
 = 1.0.3 =
 * 2021-08-9
