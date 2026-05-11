@@ -157,17 +157,113 @@ class Easy_IP_Blocker_Settings {
 	 */
 	public function settings_assets() {
 
-		// We're including the farbtastic script & styles here because they're needed for the colour picker
-		// If you're not including a colour picker field then you can leave these calls out as well as the farbtastic dependency for the wpt-admin-js script below.
 		wp_enqueue_style( 'farbtastic' );
 		wp_enqueue_script( 'farbtastic' );
-
-		// We're including the WP media scripts here because they're needed for the image upload field.
-		// If you're not including an image upload then you can leave this function call out.
 		wp_enqueue_media();
 
 		wp_register_script( $this->parent->_token . '-settings-js', $this->parent->assets_url . 'js/settings' . $this->parent->script_suffix . '.js', array( 'farbtastic', 'jquery' ), '1.0.0', true );
 		wp_enqueue_script( $this->parent->_token . '-settings-js' );
+
+		$css = '
+			#easy_ip_blocker_settings { max-width: 800px; }
+
+			.eib-header {
+				background: #1d2327;
+				border-radius: 8px 8px 0 0;
+				padding: 24px 28px;
+				margin: 20px 0 0;
+			}
+			.eib-header-inner {
+				display: flex;
+				align-items: center;
+				gap: 16px;
+			}
+			.eib-header-icon {
+				color: #f0c33c;
+				flex-shrink: 0;
+			}
+			.eib-header h1 {
+				color: #fff;
+				font-size: 22px;
+				font-weight: 600;
+				margin: 0;
+				padding: 0;
+				line-height: 1.3;
+			}
+			.eib-version {
+				color: #f0c33c;
+				font-size: 13px;
+				margin: 2px 0 0;
+				opacity: 0.9;
+			}
+
+			.eib-card {
+				background: #fff;
+				border: 1px solid #c3c4c7;
+				border-top: none;
+				padding: 24px 28px;
+			}
+			.eib-card .form-table th {
+				font-weight: 600;
+				padding-top: 20px;
+			}
+			.eib-card .form-table td {
+				padding-top: 16px;
+			}
+			.eib-card textarea {
+				width: 100%;
+				max-width: 100%;
+				min-height: 180px;
+				font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+				font-size: 13px;
+				line-height: 1.6;
+				padding: 12px;
+				border: 1px solid #c3c4c7;
+				border-radius: 4px;
+				resize: vertical;
+			}
+			.eib-card textarea:focus {
+				border-color: #2271b1;
+				box-shadow: 0 0 0 1px #2271b1;
+				outline: none;
+			}
+			.eib-card .description {
+				color: #646970;
+				font-style: normal;
+				margin-top: 8px;
+				display: block;
+			}
+			.eib-card .submit {
+				padding-top: 8px;
+				border-top: 1px solid #f0f0f1;
+				margin-top: 20px;
+			}
+
+			.eib-footer {
+				background: #f6f7f7;
+				border: 1px solid #c3c4c7;
+				border-top: none;
+				border-radius: 0 0 8px 8px;
+				padding: 16px 28px;
+			}
+			.eib-footer p {
+				margin: 0;
+				color: #646970;
+				font-size: 13px;
+			}
+			.eib-footer a {
+				color: #2271b1;
+				text-decoration: none;
+			}
+			.eib-footer a:hover {
+				color: #135e96;
+				text-decoration: underline;
+			}
+		';
+
+		wp_register_style( $this->parent->_token . '-admin', false, array(), $this->parent->_version );
+		wp_enqueue_style( $this->parent->_token . '-admin' );
+		wp_add_inline_style( $this->parent->_token . '-admin', $css );
 	}
 
 	/**
@@ -191,15 +287,15 @@ class Easy_IP_Blocker_Settings {
 
 		$settings['standard'] = array(
 			'title'       => __( 'Settings', 'easy-ip-blocker' ),
-			'description' => __( 'List the IPs that you want to block here.', 'easy-ip-blocker' ),
+			'description' => __( 'Block visitors by IP address, CIDR range, or wildcard pattern.', 'easy-ip-blocker' ),
 			'fields'      => array(
 				array(
 					'id'          => 'blocked_ips',
 					'label'       => __( 'IP Block list', 'easy-ip-blocker' ),
-					'description' => __( 'You can list all IPs that you want to block, one IP per line.', 'easy-ip-blocker' ),
+					'description' => __( 'Enter one rule per line. Supported formats: exact IP (192.168.1.1), CIDR range (192.168.1.0/24), or wildcard (10.0.0.*). Lines starting with # are ignored.', 'easy-ip-blocker' ),
 					'type'        => 'textarea',
 					'default'     => '',
-					'placeholder' => __( 'eg. 10.10.10.10', 'easy-ip-blocker' ),
+					'placeholder' => __( "# Exact IP\n192.168.1.1\n\n# CIDR range\n10.0.0.0/24\n\n# Wildcard\n172.16.*.*", 'easy-ip-blocker' ),
 				),
 			),
 		);
@@ -290,16 +386,24 @@ class Easy_IP_Blocker_Settings {
 	 */
 	public function settings_page() {
 
-		// Build page HTML.
-		$html      = '<div class="wrap" id="' . $this->parent->_token . '_settings">' . "\n";
-			$html .= '<h2>' . __( 'Easy IP Block', 'easy-ip-blocker' ) . '</h2>' . "\n";
-
-			$tab = '';
+		$tab = '';
 		//phpcs:disable
 		if ( isset( $_GET['tab'] ) && $_GET['tab'] ) {
 			$tab .= $_GET['tab'];
 		}
 		//phpcs:enable
+
+		// Build page HTML.
+		$html  = '<div class="wrap" id="' . $this->parent->_token . '_settings">' . "\n";
+		$html .= '<div class="eib-header">' . "\n";
+		$html .= '<div class="eib-header-inner">' . "\n";
+		$html .= '<svg class="eib-header-icon" viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="2" fill="none"/><line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>' . "\n";
+		$html .= '<div>' . "\n";
+		$html .= '<h1>' . esc_html__( 'Easy IP Blocker', 'easy-ip-blocker' ) . '</h1>' . "\n";
+		$html .= '<p class="eib-version">' . sprintf( esc_html__( 'Version %s', 'easy-ip-blocker' ), esc_html( $this->parent->_version ) ) . '</p>' . "\n";
+		$html .= '</div>' . "\n";
+		$html .= '</div>' . "\n";
+		$html .= '</div>' . "\n";
 
 		// Show page tabs.
 		if ( is_array( $this->settings ) && 1 < count( $this->settings ) ) {
@@ -309,7 +413,6 @@ class Easy_IP_Blocker_Settings {
 			$c = 0;
 			foreach ( $this->settings as $section => $data ) {
 
-				// Set tab class.
 				$class = 'nav-tab';
 				if ( ! isset( $_GET['tab'] ) ) { //phpcs:ignore
 					if ( 0 === $c ) {
@@ -321,13 +424,11 @@ class Easy_IP_Blocker_Settings {
 					}
 				}
 
-				// Set tab link.
 				$tab_link = add_query_arg( array( 'tab' => $section ) );
 				if ( isset( $_GET['settings-updated'] ) ) { //phpcs:ignore
 					$tab_link = remove_query_arg( 'settings-updated', $tab_link );
 				}
 
-				// Output tab.
 				$html .= '<a href="' . $tab_link . '" class="' . esc_attr( $class ) . '">' . esc_html( $data['title'] ) . '</a>' . "\n";
 
 				++$c;
@@ -336,20 +437,34 @@ class Easy_IP_Blocker_Settings {
 			$html .= '</h2>' . "\n";
 		}
 
-			$html .= '<form method="post" action="options.php" enctype="multipart/form-data">' . "\n";
+		$html .= '<div class="eib-card">' . "\n";
+		$html .= '<form method="post" action="options.php" enctype="multipart/form-data">' . "\n";
 
-				// Get settings fields.
-				ob_start();
-				settings_fields( $this->parent->_token . '_settings' );
-				do_settings_sections( $this->parent->_token . '_settings' );
-				$html .= ob_get_clean();
+		ob_start();
+		settings_fields( $this->parent->_token . '_settings' );
+		do_settings_sections( $this->parent->_token . '_settings' );
+		$html .= ob_get_clean();
 
-				$html     .= '<p class="submit">' . "\n";
-					$html .= '<input type="hidden" name="tab" value="' . esc_attr( $tab ) . '" />' . "\n";
-					$html .= '<input name="Submit" type="submit" class="button-primary" value="' . esc_attr( __( 'Save Settings', 'easy-ip-blocker' ) ) . '" />' . "\n";
-				$html     .= '</p>' . "\n";
-			$html         .= '</form>' . "\n";
-		$html             .= '</div>' . "\n";
+		$html .= '<p class="submit">' . "\n";
+		$html .= '<input type="hidden" name="tab" value="' . esc_attr( $tab ) . '" />' . "\n";
+		$html .= '<input name="Submit" type="submit" class="button-primary" value="' . esc_attr( __( 'Save Settings', 'easy-ip-blocker' ) ) . '" />' . "\n";
+		$html .= '</p>' . "\n";
+		$html .= '</form>' . "\n";
+		$html .= '</div>' . "\n";
+
+		// Footer.
+		$html .= '<div class="eib-footer">' . "\n";
+		$html .= '<p>' . sprintf(
+			/* translators: 1: opening link tag for WP support, 2: closing link tag, 3: opening link tag for GitHub, 4: closing link tag */
+			__( 'Need help? Visit the %1$sWordPress.org support forum%2$s or %3$sopen an issue on GitHub%4$s.', 'easy-ip-blocker' ),
+			'<a href="https://wordpress.org/support/plugin/easy-ip-blocker/" target="_blank" rel="noopener noreferrer">',
+			'</a>',
+			'<a href="https://github.com/wpugph/Easy-IP-Blocker/issues" target="_blank" rel="noopener noreferrer">',
+			'</a>'
+		) . '</p>' . "\n";
+		$html .= '</div>' . "\n";
+
+		$html .= '</div>' . "\n";
 
 		echo $html; //phpcs:ignore
 	}

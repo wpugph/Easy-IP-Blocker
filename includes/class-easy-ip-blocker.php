@@ -163,22 +163,79 @@ class Easy_IP_Blocker {
 	 */
 	public function eib_blocklist( $error ) {
 
-		$allowedaddress = get_option( 'eib_blocked_ips' );
+		$blocked_ips = get_option( 'eib_blocked_ips' );
 
-		$request_server = $this->eib_get_ip();
-
-		if ( ! ( empty( $allowedaddress ) ) ) {
-			$csv = array_map( 'trim', explode( PHP_EOL, $allowedaddress ) );
-
-			if ( in_array( $request_server, $csv, true ) ) {
-
-				wp_die( 'Access Denied!', 403 );
-			} else {
-				return true;
-			}
-		} else {
+		if ( empty( $blocked_ips ) ) {
 			return true;
 		}
+
+		$visitor_ip = $this->eib_get_ip();
+		$entries    = array_map( 'trim', explode( PHP_EOL, $blocked_ips ) );
+
+		foreach ( $entries as $entry ) {
+			if ( '' === $entry || '#' === $entry[0] ) {
+				continue;
+			}
+
+			if ( $this->eib_ip_matches( $visitor_ip, $entry ) ) {
+				wp_die( 'Access Denied!', 403 );
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Check if an IP matches a rule (exact, CIDR, or wildcard).
+	 *
+	 * @param string $ip      Visitor IP address.
+	 * @param string $rule    Blocking rule.
+	 * @return boolean
+	 */
+	private function eib_ip_matches( $ip, $rule ) {
+		if ( $ip === $rule ) {
+			return true;
+		}
+
+		// CIDR notation (e.g. 192.168.1.0/24).
+		if ( false !== strpos( $rule, '/' ) ) {
+			return $this->eib_cidr_match( $ip, $rule );
+		}
+
+		// Wildcard notation (e.g. 10.0.0.*).
+		if ( false !== strpos( $rule, '*' ) ) {
+			$pattern = '/^' . str_replace( array( '.', '*' ), array( '\\.', '\\d{1,3}' ), $rule ) . '$/';
+			return (bool) preg_match( $pattern, $ip );
+		}
+
+		return false;
+	}
+
+	/**
+	 * Check if an IP is within a CIDR range.
+	 *
+	 * @param string $ip   IP address to check.
+	 * @param string $cidr CIDR notation (e.g. 192.168.1.0/24).
+	 * @return boolean
+	 */
+	private function eib_cidr_match( $ip, $cidr ) {
+		list( $subnet, $mask ) = explode( '/', $cidr, 2 );
+
+		$mask = (int) $mask;
+		if ( $mask < 0 || $mask > 32 ) {
+			return false;
+		}
+
+		$ip_long     = ip2long( $ip );
+		$subnet_long = ip2long( $subnet );
+
+		if ( false === $ip_long || false === $subnet_long ) {
+			return false;
+		}
+
+		$mask_long = -1 << ( 32 - $mask );
+
+		return ( $ip_long & $mask_long ) === ( $subnet_long & $mask_long );
 	}
 
 	/**

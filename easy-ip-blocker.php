@@ -1,13 +1,14 @@
 <?php
 /**
  * Plugin Name: Easy IP Blocker
- * Version: 1.0.4
+ * Version: 2.0.0
  * Plugin URI: https://wordpress.org/plugins/easy-ip-blocker/
- * Description: Easily blocks IPs
+ * Description: Quickly block unwanted IPs in your WP site
  * Author: Carl Alberto
  * Author URI: https://carlalberto.code.blog/
  * Requires at least: 5.0
- * Tested up to: 6.0.3
+ * Tested up to: 6.8
+ * Requires PHP: 8.4
  *
  * Text Domain: easy-ip-blocker
  * Domain Path: /lang/
@@ -35,7 +36,7 @@ require_once 'includes/lib/class-easy-ip-blocker-admin-api.php';
  * @return object Easy_IP_Blocker
  */
 function easy_ip_blocker() {
-	$instance = Easy_IP_Blocker::instance( __FILE__, '1.0.4' );
+	$instance = Easy_IP_Blocker::instance( __FILE__, '2.0.0' );
 
 	if ( is_null( $instance->settings ) ) {
 		$instance->settings = Easy_IP_Blocker_Settings::instance( $instance );
