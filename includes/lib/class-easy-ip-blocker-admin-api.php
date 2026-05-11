@@ -1,8 +1,8 @@
 <?php
 /**
- * Post type Admin API file.
+ * Admin API file.
  *
- * @package Easy IP Blocker/Includes
+ * @package Easy_IP_Blocker/Includes
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -15,60 +15,185 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Easy_IP_Blocker_Admin_API {
 
 	/**
-	 * Constructor function
+	 * Allowed HTML elements and attributes for wp_kses output.
+	 *
+	 * @var array
 	 */
-	public function __construct() {
-		add_action( 'save_post', array( $this, 'save_meta_boxes' ), 10, 1 );
-	}
+	public $allowed_htmls = array(
+		'a'        => array(
+			'href'   => array(),
+			'id'     => array(),
+			'title'  => array(),
+			'class'  => array(),
+			'target' => array(),
+			'rel'    => array(),
+		),
+		'svg'      => array(
+			'class'   => array(),
+			'viewBox' => array(),
+			'viewbox' => array(),
+			'width'   => array(),
+			'height'  => array(),
+			'fill'    => array(),
+			'xmlns'   => array(),
+		),
+		'path'     => array(
+			'd'              => array(),
+			'stroke'         => array(),
+			'stroke-width'   => array(),
+			'stroke-linecap' => array(),
+			'fill'           => array(),
+		),
+		'circle'   => array(
+			'cx'           => array(),
+			'cy'           => array(),
+			'r'            => array(),
+			'stroke'       => array(),
+			'stroke-width' => array(),
+			'fill'         => array(),
+		),
+		'line'     => array(
+			'x1'             => array(),
+			'y1'             => array(),
+			'x2'             => array(),
+			'y2'             => array(),
+			'stroke'         => array(),
+			'stroke-width'   => array(),
+			'stroke-linecap' => array(),
+		),
+		'h1'       => array(
+			'class' => array(),
+		),
+		'h2'       => array(
+			'class' => array(),
+		),
+		'h3'       => array(
+			'class' => array(),
+		),
+		'h4'       => array(
+			'class' => array(),
+		),
+		'input'    => array(
+			'id'                  => array(),
+			'type'                => array(),
+			'name'                => array(),
+			'placeholder'         => array(),
+			'value'               => array(),
+			'class'               => array(),
+			'checked'             => array(),
+			'style'               => array(),
+			'data-uploader_title' => array(),
+			'data-uploader_text'  => array(),
+			'tabindex'            => array(),
+		),
+		'select'   => array(
+			'id'          => array(),
+			'type'        => array(),
+			'name'        => array(),
+			'placeholder' => array(),
+			'value'       => array(),
+			'multiple'    => array(),
+			'style'       => array(),
+		),
+		'option'   => array(
+			'id'       => array(),
+			'value'    => array(),
+			'selected' => array(),
+		),
+		'label'    => array(
+			'for'   => array(),
+			'title' => array(),
+			'class' => array(),
+		),
+		'span'     => array(
+			'class' => array(),
+			'title' => array(),
+		),
+		'table'    => array(
+			'class' => array(),
+			'role'  => array(),
+		),
+		'tbody'    => array(
+			'class' => array(),
+		),
+		'th'       => array(
+			'scope' => array(),
+		),
+		'form'     => array(
+			'method'  => array(),
+			'action'  => array(),
+			'enctype' => array(),
+		),
+		'div'      => array(
+			'class' => array(),
+			'id'    => array(),
+		),
+		'img'      => array(
+			'class' => array(),
+			'id'    => array(),
+			'src'   => array(),
+		),
+		'textarea' => array(
+			'class'       => array(),
+			'id'          => array(),
+			'rows'        => array(),
+			'cols'        => array(),
+			'name'        => array(),
+			'placeholder' => array(),
+			'spellcheck'  => array(),
+		),
+		'tr'       => array(),
+		'td'       => array(),
+		'p'        => array(
+			'class' => array(),
+			'style' => array(),
+		),
+		'br'       => array(),
+		'em'       => array(),
+		'strong'   => array(),
+		'code'     => array(
+			'class' => array(),
+		),
+	);
 
 	/**
 	 * Generate HTML for displaying fields.
 	 *
 	 * @param  array   $data Data array.
 	 * @param  object  $post Post object.
-	 * @param  boolean $echo  Whether to echo the field HTML or return it.
-	 * @return string
+	 * @param  boolean $echo Whether to echo the field HTML or return it.
+	 * @return string|void
 	 */
 	public function display_field( $data = array(), $post = null, $echo = true ) {
 
-		// Get field info.
 		if ( isset( $data['field'] ) ) {
 			$field = $data['field'];
 		} else {
 			$field = $data;
 		}
 
-		// Check for prefix on option name.
 		$option_name = '';
 		if ( isset( $data['prefix'] ) ) {
 			$option_name = $data['prefix'];
 		}
 
-		// Get saved data.
 		$data = '';
 		if ( $post ) {
-
-			// Get saved field data.
 			$option_name .= $field['id'];
 			$option       = get_post_meta( $post->ID, $field['id'], true );
 
-			// Get data to display in field.
 			if ( isset( $option ) ) {
 				$data = $option;
 			}
 		} else {
-
-			// Get saved option.
 			$option_name .= $field['id'];
 			$option       = get_option( $option_name );
 
-			// Get data to display in field.
 			if ( isset( $option ) ) {
 				$data = $option;
 			}
 		}
 
-		// Show default data if no option saved and default is supplied.
 		if ( false === $data && isset( $field['default'] ) ) {
 			$data = $field['default'];
 		} elseif ( false === $data ) {
@@ -97,7 +222,7 @@ class Easy_IP_Blocker_Admin_API {
 				if ( isset( $field['max'] ) ) {
 					$max = ' max="' . esc_attr( $field['max'] ) . '"';
 				}
-				$html .= '<input id="' . esc_attr( $field['id'] ) . '" type="' . esc_attr( $field['type'] ) . '" name="' . esc_attr( $option_name ) . '" placeholder="' . esc_attr( $field['placeholder'] ) . '" value="' . esc_attr( $data ) . '"' . $min . '' . $max . '/>' . "\n";
+				$html .= '<input id="' . esc_attr( $field['id'] ) . '" type="' . esc_attr( $field['type'] ) . '" name="' . esc_attr( $option_name ) . '" placeholder="' . esc_attr( $field['placeholder'] ) . '" value="' . esc_attr( $data ) . '"' . $min . $max . '/>' . "\n";
 				break;
 
 			case 'text_secret':
@@ -105,7 +230,7 @@ class Easy_IP_Blocker_Admin_API {
 				break;
 
 			case 'textarea':
-				$html .= '<textarea id="' . esc_attr( $field['id'] ) . '" rows="5" cols="50" name="' . esc_attr( $option_name ) . '" placeholder="' . esc_attr( $field['placeholder'] ) . '">' . $data . '</textarea><br/>' . "\n";
+				$html .= '<textarea id="' . esc_attr( $field['id'] ) . '" rows="5" cols="50" name="' . esc_attr( $option_name ) . '" placeholder="' . esc_attr( $field['placeholder'] ) . '">' . esc_textarea( $data ) . '</textarea><br/>' . "\n";
 				break;
 
 			case 'checkbox':
@@ -122,7 +247,7 @@ class Easy_IP_Blocker_Admin_API {
 					if ( in_array( $k, (array) $data, true ) ) {
 						$checked = true;
 					}
-					$html .= '<p><label for="' . esc_attr( $field['id'] . '_' . $k ) . '" class="checkbox_multi"><input type="checkbox" ' . checked( $checked, true, false ) . ' name="' . esc_attr( $option_name ) . '[]" value="' . esc_attr( $k ) . '" id="' . esc_attr( $field['id'] . '_' . $k ) . '" /> ' . $v . '</label></p> ';
+					$html .= '<p><label for="' . esc_attr( $field['id'] . '_' . $k ) . '" class="checkbox_multi"><input type="checkbox" ' . checked( $checked, true, false ) . ' name="' . esc_attr( $option_name ) . '[]" value="' . esc_attr( $k ) . '" id="' . esc_attr( $field['id'] . '_' . $k ) . '" /> ' . esc_html( $v ) . '</label></p> ';
 				}
 				break;
 
@@ -132,7 +257,7 @@ class Easy_IP_Blocker_Admin_API {
 					if ( $k === $data ) {
 						$checked = true;
 					}
-					$html .= '<label for="' . esc_attr( $field['id'] . '_' . $k ) . '"><input type="radio" ' . checked( $checked, true, false ) . ' name="' . esc_attr( $option_name ) . '" value="' . esc_attr( $k ) . '" id="' . esc_attr( $field['id'] . '_' . $k ) . '" /> ' . $v . '</label> ';
+					$html .= '<label for="' . esc_attr( $field['id'] . '_' . $k ) . '"><input type="radio" ' . checked( $checked, true, false ) . ' name="' . esc_attr( $option_name ) . '" value="' . esc_attr( $k ) . '" id="' . esc_attr( $field['id'] . '_' . $k ) . '" /> ' . esc_html( $v ) . '</label> ';
 				}
 				break;
 
@@ -143,7 +268,7 @@ class Easy_IP_Blocker_Admin_API {
 					if ( $k === $data ) {
 						$selected = true;
 					}
-					$html .= '<option ' . selected( $selected, true, false ) . ' value="' . esc_attr( $k ) . '">' . $v . '</option>';
+					$html .= '<option ' . selected( $selected, true, false ) . ' value="' . esc_attr( $k ) . '">' . esc_html( $v ) . '</option>';
 				}
 				$html .= '</select> ';
 				break;
@@ -155,7 +280,7 @@ class Easy_IP_Blocker_Admin_API {
 					if ( in_array( $k, (array) $data, true ) ) {
 						$selected = true;
 					}
-					$html .= '<option ' . selected( $selected, true, false ) . ' value="' . esc_attr( $k ) . '">' . $v . '</option>';
+					$html .= '<option ' . selected( $selected, true, false ) . ' value="' . esc_attr( $k ) . '">' . esc_html( $v ) . '</option>';
 				}
 				$html .= '</select> ';
 				break;
@@ -165,10 +290,10 @@ class Easy_IP_Blocker_Admin_API {
 				if ( $data ) {
 					$image_thumb = wp_get_attachment_thumb_url( $data );
 				}
-				$html .= '<img id="' . $option_name . '_preview" class="image_preview" src="' . $image_thumb . '" /><br/>' . "\n";
-				$html .= '<input id="' . $option_name . '_button" type="button" data-uploader_title="' . __( 'Upload an image', 'easy-ip-blocker' ) . '" data-uploader_button_text="' . __( 'Use image', 'easy-ip-blocker' ) . '" class="image_upload_button button" value="' . __( 'Upload new image', 'easy-ip-blocker' ) . '" />' . "\n";
-				$html .= '<input id="' . $option_name . '_delete" type="button" class="image_delete_button button" value="' . __( 'Remove image', 'easy-ip-blocker' ) . '" />' . "\n";
-				$html .= '<input id="' . $option_name . '" class="image_data_field" type="hidden" name="' . $option_name . '" value="' . $data . '"/><br/>' . "\n";
+				$html .= '<img id="' . esc_attr( $option_name ) . '_preview" class="image_preview" src="' . esc_url( $image_thumb ) . '" /><br/>' . "\n";
+				$html .= '<input id="' . esc_attr( $option_name ) . '_button" type="button" data-uploader_title="' . esc_attr__( 'Upload an image', 'easy-ip-blocker' ) . '" data-uploader_text="' . esc_attr__( 'Use image', 'easy-ip-blocker' ) . '" class="image_upload_button button" value="' . esc_attr__( 'Upload new image', 'easy-ip-blocker' ) . '" />' . "\n";
+				$html .= '<input id="' . esc_attr( $option_name ) . '_delete" type="button" class="image_delete_button button" value="' . esc_attr__( 'Remove image', 'easy-ip-blocker' ) . '" />' . "\n";
+				$html .= '<input id="' . esc_attr( $option_name ) . '" class="image_data_field" type="hidden" name="' . esc_attr( $option_name ) . '" value="' . esc_attr( $data ) . '"/><br/>' . "\n";
 				break;
 
 			case 'editor':
@@ -180,7 +305,6 @@ class Easy_IP_Blocker_Admin_API {
 					)
 				);
 				break;
-
 		}
 
 		switch ( $field['type'] ) {
@@ -188,7 +312,7 @@ class Easy_IP_Blocker_Admin_API {
 			case 'checkbox_multi':
 			case 'radio':
 			case 'select_multi':
-				$html .= '<br/><span class="description">' . $field['description'] . '</span>';
+				$html .= '<br/><span class="description">' . esc_html( $field['description'] ) . '</span>';
 				break;
 
 			default:
@@ -196,7 +320,7 @@ class Easy_IP_Blocker_Admin_API {
 					$html .= '<label for="' . esc_attr( $field['id'] ) . '">' . "\n";
 				}
 
-				$html .= '<span class="description">' . $field['description'] . '</span>' . "\n";
+				$html .= '<span class="description">' . esc_html( $field['description'] ) . '</span>' . "\n";
 
 				if ( ! $post ) {
 					$html .= '</label>' . "\n";
@@ -212,13 +336,13 @@ class Easy_IP_Blocker_Admin_API {
 	}
 
 	/**
-	 * Validate form field
+	 * Validate form field.
 	 *
 	 * @param  string $data Submitted value.
 	 * @param  string $type Type of field to validate.
-	 * @return string       Validated value
+	 * @return string Validated value.
 	 */
-	public function validate_field( $data = '', $type = 'text' ) {
+	public function validate_field( string $data = '', string $type = 'text' ): string {
 
 		switch ( $type ) {
 			case 'text':
@@ -234,228 +358,4 @@ class Easy_IP_Blocker_Admin_API {
 
 		return $data;
 	}
-
-	/**
-	 * Add meta box to the dashboard.
-	 *
-	 * @param string $id            Unique ID for metabox.
-	 * @param string $title         Display title of metabox.
-	 * @param array  $post_types    Post types to which this metabox applies.
-	 * @param string $context       Context in which to display this metabox ('advanced' or 'side').
-	 * @param string $priority      Priority of this metabox ('default', 'low' or 'high').
-	 * @param array  $callback_args Any axtra arguments that will be passed to the display function for this metabox.
-	 * @return void
-	 */
-	public function add_meta_box( $id = '', $title = '', $post_types = array(), $context = 'advanced', $priority = 'default', $callback_args = null ) {
-
-		// Get post type(s).
-		if ( ! is_array( $post_types ) ) {
-			$post_types = array( $post_types );
-		}
-
-		// Generate each metabox.
-		foreach ( $post_types as $post_type ) {
-			add_meta_box( $id, $title, array( $this, 'meta_box_content' ), $post_type, $context, $priority, $callback_args );
-		}
-	}
-
-	/**
-	 * Display metabox content
-	 *
-	 * @param  object $post Post object.
-	 * @param  array  $args Arguments unique to this metabox.
-	 * @return void
-	 */
-	public function meta_box_content( $post, $args ) {
-
-		$fields = apply_filters( $post->post_type . '_custom_fields', array(), $post->post_type );
-
-		if ( ! is_array( $fields ) || 0 === count( $fields ) ) {
-			return;
-		}
-
-		echo '<div class="custom-field-panel">' . "\n";
-
-		foreach ( $fields as $field ) {
-
-			if ( ! isset( $field['metabox'] ) ) {
-				continue;
-			}
-
-			if ( ! is_array( $field['metabox'] ) ) {
-				$field['metabox'] = array( $field['metabox'] );
-			}
-
-			if ( in_array( $args['id'], $field['metabox'], true ) ) {
-				$this->display_meta_box_field( $field, $post );
-			}
-		}
-
-		echo '</div>' . "\n";
-
-	}
-
-	/**
-	 * Allowed html.
-	 *
-	 * @var array
-	 */
-	public $allowed_htmls = [
-		'a'        => [
-			'href'   => [],
-			'id'     => [],
-			'title'  => [],
-			'class'  => [],
-			'target' => [],
-			'rel'    => [],
-		],
-		'svg'      => [
-			'class'   => [],
-			'viewBox' => [],
-			'viewbox' => [],
-			'width'   => [],
-			'height'  => [],
-			'fill'    => [],
-			'xmlns'   => [],
-		],
-		'path'     => [
-			'd'               => [],
-			'stroke'          => [],
-			'stroke-width'    => [],
-			'stroke-linecap'  => [],
-			'fill'            => [],
-		],
-		'circle'   => [
-			'cx'           => [],
-			'cy'           => [],
-			'r'            => [],
-			'stroke'       => [],
-			'stroke-width' => [],
-			'fill'         => [],
-		],
-		'line'     => [
-			'x1'              => [],
-			'y1'              => [],
-			'x2'              => [],
-			'y2'              => [],
-			'stroke'          => [],
-			'stroke-width'    => [],
-			'stroke-linecap'  => [],
-		],
-		'h1'       => [
-			'href'  => [],
-			'title' => [],
-			'class' => [],
-		],
-		'h2'       => [
-			'href'  => [],
-			'title' => [],
-			'class' => [],
-		],
-		'h3'       => [
-			'href'  => [],
-			'title' => [],
-			'class' => [],
-		],
-		'h4'       => [
-			'href'  => [],
-			'title' => [],
-			'class' => [],
-		],
-		'input'    => [
-			'id'                  => [],
-			'type'                => [],
-			'name'                => [],
-			'placeholder'         => [],
-			'value'               => [],
-			'class'               => [],
-			'checked'             => [],
-			'style'               => [],
-			'data-uploader_title' => [],
-			'data-uploader_text'  => [],
-			'tabindex'            => [],
-		],
-		'select'   => [
-			'id'          => [],
-			'type'        => [],
-			'name'        => [],
-			'placeholder' => [],
-			'value'       => [],
-			'multiple'    => [],
-			'style'       => [],
-		],
-		'option'   => [
-			'id'          => [],
-			'type'        => [],
-			'name'        => [],
-			'placeholder' => [],
-			'value'       => [],
-			'multiple'    => [],
-			'selected'    => [],
-		],
-		'label'    => [
-			'for'   => [],
-			'title' => [],
-		],
-		'span'     => [
-			'class' => [],
-			'title' => [],
-		],
-		'table'    => [
-			'scope' => [],
-			'title' => [],
-			'class' => [],
-			'role'  => [],
-		],
-		'tbody'    => [
-			'scope' => [],
-			'title' => [],
-			'class' => [],
-			'role'  => [],
-		],
-		'th'       => [
-			'scope' => [],
-			'title' => [],
-		],
-		'form'     => [
-			'method'      => [],
-			'type'        => [],
-			'name'        => [],
-			'placeholder' => [],
-			'value'       => [],
-			'multiple'    => [],
-			'selected'    => [],
-			'action'      => [],
-			'enctype'     => [],
-		],
-		'div'      => [
-			'class' => [],
-			'id'    => [],
-		],
-		'img'      => [
-			'class' => [],
-			'id'    => [],
-			'src'   => [],
-		],
-		'textarea' => [
-			'class'       => [],
-			'id'          => [],
-			'rows'        => [],
-			'cols'        => [],
-			'name'        => [],
-			'placeholder' => [],
-			'spellcheck'  => [],
-		],
-		'tr'       => [],
-		'td'       => [],
-		'p'        => [],
-		'br'       => [],
-		'em'       => [],
-		'strong'   => [],
-		'code'     => [
-			'class' => [],
-		],
-		'th'       => [],
-	];
-
 }

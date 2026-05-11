@@ -2,7 +2,7 @@
 /**
  * WP-CLI commands for Easy IP Blocker.
  *
- * @package Easy IP Blocker/Includes
+ * @package Easy_IP_Blocker/Includes
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -13,6 +13,32 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Manage the Easy IP Blocker blocklist.
  */
 class Easy_IP_Blocker_CLI {
+
+	/**
+	 * Validate that an entry is a valid IP, CIDR, wildcard, or comment.
+	 *
+	 * @param string $entry Entry to validate.
+	 * @return bool True if valid.
+	 */
+	private function is_valid_entry( string $entry ): bool {
+		if ( '#' === $entry[0] ) {
+			return true;
+		}
+
+		if ( filter_var( $entry, FILTER_VALIDATE_IP ) ) {
+			return true;
+		}
+
+		if ( preg_match( '/^\d{1,3}(\.\d{1,3}){3}\/\d{1,2}$/', $entry ) ) {
+			return true;
+		}
+
+		if ( preg_match( '/^[\d.*]{3,15}$/', $entry ) && false !== strpos( $entry, '*' ) ) {
+			return true;
+		}
+
+		return false;
+	}
 
 	/**
 	 * Add one or more entries to the IP blocklist.
@@ -31,8 +57,9 @@ class Easy_IP_Blocker_CLI {
 	 *     wp eib add "# Spammer network" 203.0.113.0/24
 	 *
 	 * @param array $args Positional arguments.
+	 * @return void
 	 */
-	public function add( $args ) {
+	public function add( array $args ): void {
 		$current = get_option( 'eib_blocked_ips', '' );
 		$entries = array_map( 'trim', explode( PHP_EOL, $current ) );
 		$added   = array();
@@ -40,6 +67,11 @@ class Easy_IP_Blocker_CLI {
 		foreach ( $args as $entry ) {
 			$entry = trim( $entry );
 			if ( '' === $entry ) {
+				continue;
+			}
+
+			if ( ! $this->is_valid_entry( $entry ) ) {
+				WP_CLI::warning( sprintf( 'Invalid entry skipped: %s', $entry ) );
 				continue;
 			}
 
@@ -81,8 +113,9 @@ class Easy_IP_Blocker_CLI {
 	 *     wp eib remove 10.0.0.0/24
 	 *
 	 * @param array $args Positional arguments.
+	 * @return void
 	 */
-	public function remove( $args ) {
+	public function remove( array $args ): void {
 		$current = get_option( 'eib_blocked_ips', '' );
 		$entries = array_map( 'trim', explode( PHP_EOL, $current ) );
 		$removed = array();
@@ -129,8 +162,9 @@ class Easy_IP_Blocker_CLI {
 	 *     wp eib delete 10.0.0.0/24 172.16.0.*
 	 *
 	 * @param array $args Positional arguments.
+	 * @return void
 	 */
-	public function delete( $args ) {
+	public function delete( array $args ): void {
 		$this->remove( $args );
 	}
 
@@ -158,8 +192,9 @@ class Easy_IP_Blocker_CLI {
 	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Associative arguments.
+	 * @return void
 	 */
-	public function list_( $args, $assoc_args ) {
+	public function list_( array $args, array $assoc_args ): void {
 		$current = get_option( 'eib_blocked_ips', '' );
 
 		if ( empty( trim( $current ) ) ) {
@@ -172,7 +207,7 @@ class Easy_IP_Blocker_CLI {
 
 		switch ( $format ) {
 			case 'count':
-				WP_CLI::log( count( $entries ) );
+				WP_CLI::log( (string) count( $entries ) );
 				break;
 			case 'csv':
 				WP_CLI::log( implode( ',', $entries ) );
@@ -199,8 +234,9 @@ class Easy_IP_Blocker_CLI {
 	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Associative arguments.
+	 * @return void
 	 */
-	public function clear( $args, $assoc_args ) {
+	public function clear( array $args, array $assoc_args ): void {
 		WP_CLI::confirm( 'Are you sure you want to clear the entire blocklist?', $assoc_args );
 		update_option( 'eib_blocked_ips', '' );
 		WP_CLI::success( 'Blocklist cleared.' );

@@ -13,7 +13,7 @@
  * Text Domain: easy-ip-blocker
  * Domain Path: /lang/
  *
- * @package WordPress
+ * @package Easy_IP_Blocker
  * @author Carl Alberto
  * @since 1.0.0
  */
@@ -39,7 +39,7 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
  * Returns the main instance of Easy_IP_Blocker to prevent the need to use globals.
  *
  * @since  1.0.0
- * @return object Easy_IP_Blocker
+ * @return Easy_IP_Blocker Plugin instance.
  */
 function easy_ip_blocker() {
 	$instance = Easy_IP_Blocker::instance( __FILE__, '2.0.0' );
