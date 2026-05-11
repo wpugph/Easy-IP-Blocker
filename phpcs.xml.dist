@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<ruleset name="Easy IP Blocker">
+	<description>PHPCS ruleset for Easy IP Blocker plugin.</description>
+
+	<file>.</file>
+
+	<exclude-pattern>vendor/*</exclude-pattern>
+	<exclude-pattern>node_modules/*</exclude-pattern>
+	<exclude-pattern>.wordpress-org/*</exclude-pattern>
+
+	<arg name="extensions" value="php"/>
+	<arg name="colors"/>
+	<arg value="sp"/>
+
+	<rule ref="WordPress">
+		<exclude name="WordPress.Files.FileName.InvalidClassFileName"/>
+		<exclude name="WordPress.Files.FileName.NotHyphenatedLowercase"/>
+	</rule>
+
+	<config name="minimum_supported_wp_version" value="5.0"/>
+	<config name="testVersion" value="7.4-"/>
+</ruleset>
