@@ -2,7 +2,7 @@
 /**
  * Main plugin class file.
  *
- * @package Easy IP Blocker/Includes
+ * @package Easy_IP_Blocker/Includes
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -17,123 +17,102 @@ class Easy_IP_Blocker {
 	/**
 	 * The single instance of Easy_IP_Blocker.
 	 *
-	 * @var     object
-	 * @access  private
-	 * @since   1.0.0
+	 * @var Easy_IP_Blocker|null
 	 */
-	private static $_instance = null; //phpcs:ignore
+	private static $instance = null;
 
 	/**
-	 * Local instance of Easy_IP_Blocker_Admin_API
+	 * Local instance of Easy_IP_Blocker_Admin_API.
 	 *
 	 * @var Easy_IP_Blocker_Admin_API|null
 	 */
 	public $admin = null;
 
 	/**
-	 * Settings class object
+	 * Settings class object.
 	 *
-	 * @var     object
-	 * @access  public
-	 * @since   1.0.0
+	 * @var Easy_IP_Blocker_Settings|null
 	 */
 	public $settings = null;
 
 	/**
 	 * The version number.
 	 *
-	 * @var     string
-	 * @access  public
-	 * @since   1.0.0
+	 * @var string
 	 */
-	public $_version; //phpcs:ignore
+	public $version;
 
 	/**
 	 * The token.
 	 *
-	 * @var     string
-	 * @access  public
-	 * @since   1.0.0
+	 * @var string
 	 */
-	public $_token; //phpcs:ignore
+	public $token;
 
 	/**
 	 * The main plugin file.
 	 *
-	 * @var     string
-	 * @access  public
-	 * @since   1.0.0
+	 * @var string
 	 */
 	public $file;
 
 	/**
 	 * The main plugin directory.
 	 *
-	 * @var     string
-	 * @access  public
-	 * @since   1.0.0
+	 * @var string
 	 */
 	public $dir;
 
 	/**
 	 * The plugin assets directory.
 	 *
-	 * @var     string
-	 * @access  public
-	 * @since   1.0.0
+	 * @var string
 	 */
 	public $assets_dir;
 
 	/**
 	 * The plugin assets URL.
 	 *
-	 * @var     string
-	 * @access  public
-	 * @since   1.0.0
+	 * @var string
 	 */
 	public $assets_url;
 
 	/**
 	 * Suffix for JavaScripts.
 	 *
-	 * @var     string
-	 * @access  public
-	 * @since   1.0.0
+	 * @var string
 	 */
 	public $script_suffix;
 
 	/**
-	 * Main Easy_IP_Blocker Instance
+	 * Main Easy_IP_Blocker Instance.
 	 *
 	 * Ensures only one instance of Easy_IP_Blocker is loaded or can be loaded.
 	 *
-	 * @param string $file File instance.
-	 * @param string $version Version parameter.
-	 *
-	 * @return Object Easy_IP_Blocker instance
-	 * @see Easy_IP_Blocker()
 	 * @since 1.0.0
-	 * @static
+	 *
+	 * @param string $file    File instance.
+	 * @param string $version Version parameter.
+	 * @return Easy_IP_Blocker Plugin instance.
 	 */
-	public static function instance( $file = '', $version = '1.0.4' ) {
-		if ( is_null( self::$_instance ) ) {
-			self::$_instance = new self( $file, $version );
+	public static function instance( string $file = '', string $version = '2.0.0' ): self {
+		if ( is_null( self::$instance ) ) {
+			self::$instance = new self( $file, $version );
 		}
 
-		return self::$_instance;
-	} // End instance ()
+		return self::$instance;
+	}
 
 	/**
-	 * Constructor funtion.
+	 * Constructor function.
 	 *
-	 * @param string $file File constructor.
+	 * @param string $file    File constructor.
 	 * @param string $version Plugin version.
 	 */
-	public function __construct( $file = '', $version = '1.0.4' ) {
-		$this->_version = $version;
-		$this->_token   = 'easy_ip_blocker';
+	public function __construct( string $file = '', string $version = '2.0.0' ) {
+		$this->version = $version;
+		$this->token   = 'easy_ip_blocker';
 
-		// Load plugin environment variables.
 		$this->file       = $file;
 		$this->dir        = dirname( $this->file );
 		$this->assets_dir = trailingslashit( $this->dir ) . 'assets';
@@ -143,92 +122,145 @@ class Easy_IP_Blocker {
 
 		register_activation_hook( $this->file, array( $this, 'install' ) );
 
-		// Load API for generic admin functions.
 		if ( is_admin() ) {
 			$this->admin = new Easy_IP_Blocker_Admin_API();
 		}
 
-		// Handle localisation.
 		$this->load_plugin_textdomain();
 		add_action( 'init', array( $this, 'load_localisation' ), 0 );
-
 		add_action( 'init', array( $this, 'eib_blocklist' ), 0 );
-	} // End __construct ()
-
-	/**
-	 * Block list function.
-	 *
-	 * @param array $error Error messages.
-	 * @return boolean
-	 */
-	public function eib_blocklist( $error ) {
-
-		$allowedaddress = get_option( 'eib_blocked_ips' );
-
-		$request_server = $this->eib_get_ip();
-
-		if ( ! ( empty( $allowedaddress ) ) ) {
-			$csv = array_map( 'trim', explode( PHP_EOL, $allowedaddress ) );
-
-			if ( in_array( $request_server, $csv, true ) ) {
-
-				wp_die( 'Access Denied!', 403 );
-			} else {
-				return true;
-			}
-		} else {
-			return true;
-		}
 	}
 
 	/**
-	 * Get IP.
+	 * Check the blocklist and deny access to blocked IPs.
 	 *
-	 * @return string ip
+	 * @return bool True if IP is not blocked.
 	 */
-	public function eib_get_ip() {
+	public function eib_blocklist(): bool {
+
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			return true;
+		}
+
+		$blocked_ips = get_option( 'eib_blocked_ips' );
+
+		if ( empty( $blocked_ips ) ) {
+			return true;
+		}
+
+		$visitor_ip = $this->eib_get_ip();
+
+		if ( empty( $visitor_ip ) ) {
+			return true;
+		}
+
+		$entries = array_map( 'trim', explode( PHP_EOL, $blocked_ips ) );
+
+		foreach ( $entries as $entry ) {
+			if ( '' === $entry || '#' === $entry[0] ) {
+				continue;
+			}
+
+			if ( $this->eib_ip_matches( $visitor_ip, $entry ) ) {
+				wp_die( esc_html__( 'Access Denied!', 'easy-ip-blocker' ), 403 );
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Check if an IP matches a rule (exact, CIDR, or wildcard).
+	 *
+	 * @param string $ip   Visitor IP address.
+	 * @param string $rule Blocking rule.
+	 * @return bool
+	 */
+	private function eib_ip_matches( string $ip, string $rule ): bool {
+		if ( $ip === $rule ) {
+			return true;
+		}
+
+		if ( false !== strpos( $rule, '/' ) ) {
+			return $this->eib_cidr_match( $ip, $rule );
+		}
+
+		if ( false !== strpos( $rule, '*' ) ) {
+			$pattern = '/^' . str_replace( array( '.', '*' ), array( '\\.', '\\d{1,3}' ), $rule ) . '$/';
+			return (bool) preg_match( $pattern, $ip );
+		}
+
+		return false;
+	}
+
+	/**
+	 * Check if an IP is within a CIDR range.
+	 *
+	 * @param string $ip   IP address to check.
+	 * @param string $cidr CIDR notation (e.g. 192.168.1.0/24).
+	 * @return bool
+	 */
+	private function eib_cidr_match( string $ip, string $cidr ): bool {
+		list( $subnet, $mask ) = explode( '/', $cidr, 2 );
+
+		$mask = (int) $mask;
+		if ( $mask < 0 || $mask > 32 ) {
+			return false;
+		}
+
+		$ip_long     = ip2long( $ip );
+		$subnet_long = ip2long( $subnet );
+
+		if ( false === $ip_long || false === $subnet_long ) {
+			return false;
+		}
+
+		$mask_long = -1 << ( 32 - $mask );
+
+		return ( $ip_long & $mask_long ) === ( $subnet_long & $mask_long );
+	}
+
+	/**
+	 * Get the visitor's IP address.
+	 *
+	 * @return string IP address.
+	 */
+	public function eib_get_ip(): string {
+		$ip = '';
+
 		if ( ! empty( $_SERVER['HTTP_CLIENT_IP'] ) ) {
 			$ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_CLIENT_IP'] ) );
 		} elseif ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
 			$ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) );
-		} else {
-
-			if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
-				$ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
-			}
+		} elseif ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
+			$ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
 		}
 
 		$ip = explode( ',', $ip );
-		return $ip[0];
-
+		return trim( $ip[0] );
 	}
 
 	/**
-	 * Load plugin localisation
+	 * Load plugin localisation.
 	 *
-	 * @access  public
-	 * @return  void
-	 * @since   1.0.0
+	 * @return void
 	 */
-	public function load_localisation() {
+	public function load_localisation(): void {
 		load_plugin_textdomain( 'easy-ip-blocker', false, dirname( plugin_basename( $this->file ) ) . '/lang/' );
-	} // End load_localisation ()
+	}
 
 	/**
-	 * Load plugin textdomain
+	 * Load plugin textdomain.
 	 *
-	 * @access  public
-	 * @return  void
-	 * @since   1.0.0
+	 * @return void
 	 */
-	public function load_plugin_textdomain() {
+	public function load_plugin_textdomain(): void {
 		$domain = 'easy-ip-blocker';
-
 		$locale = apply_filters( 'plugin_locale', get_locale(), $domain );
 
 		load_textdomain( $domain, WP_LANG_DIR . '/' . $domain . '/' . $domain . '-' . $locale . '.mo' );
 		load_plugin_textdomain( $domain, false, dirname( plugin_basename( $this->file ) ) . '/lang/' );
-	} // End load_plugin_textdomain ()
+	}
 
 	/**
 	 * Cloning is forbidden.
@@ -236,9 +268,8 @@ class Easy_IP_Blocker {
 	 * @since 1.0.0
 	 */
 	public function __clone() {
-		_doing_it_wrong( __FUNCTION__, esc_html( __( 'Cloning of Easy_IP_Blocker is forbidden' ) ), esc_attr( $this->_version ) );
-
-	} // End __clone ()
+		_doing_it_wrong( __FUNCTION__, esc_html__( 'Cloning of Easy_IP_Blocker is forbidden.', 'easy-ip-blocker' ), esc_attr( $this->version ) );
+	}
 
 	/**
 	 * Unserializing instances of this class is forbidden.
@@ -246,29 +277,24 @@ class Easy_IP_Blocker {
 	 * @since 1.0.0
 	 */
 	public function __wakeup() {
-		_doing_it_wrong( __FUNCTION__, esc_html( __( 'Unserializing instances of Easy_IP_Blocker is forbidden' ) ), esc_attr( $this->_version ) );
-	} // End __wakeup ()
+		_doing_it_wrong( __FUNCTION__, esc_html__( 'Unserializing instances of Easy_IP_Blocker is forbidden.', 'easy-ip-blocker' ), esc_attr( $this->version ) );
+	}
 
 	/**
 	 * Installation. Runs on activation.
 	 *
-	 * @access  public
-	 * @return  void
-	 * @since   1.0.0
+	 * @return void
 	 */
-	public function install() {
-		$this->_log_version_number();
-	} // End install ()
+	public function install(): void {
+		$this->log_version_number();
+	}
 
 	/**
 	 * Log the plugin version number.
 	 *
-	 * @access  public
-	 * @return  void
-	 * @since   1.0.0
+	 * @return void
 	 */
-	private function _log_version_number() { //phpcs:ignore
-		update_option( $this->_token . '_version', $this->_version );
-	} // End _log_version_number ()
-
+	private function log_version_number(): void {
+		update_option( $this->token . '_version', $this->version );
+	}
 }
