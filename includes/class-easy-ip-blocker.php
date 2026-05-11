@@ -95,7 +95,7 @@ class Easy_IP_Blocker {
 	 * @param string $version Version parameter.
 	 * @return Easy_IP_Blocker Plugin instance.
 	 */
-	public static function instance( string $file = '', string $version = '2.0.0' ): self {
+	public static function instance( string $file = '', string $version = '2.0.2' ): self {
 		if ( is_null( self::$instance ) ) {
 			self::$instance = new self( $file, $version );
 		}
@@ -109,7 +109,7 @@ class Easy_IP_Blocker {
 	 * @param string $file    File constructor.
 	 * @param string $version Plugin version.
 	 */
-	public function __construct( string $file = '', string $version = '2.0.0' ) {
+	public function __construct( string $file = '', string $version = '2.0.2' ) {
 		$this->version = $version;
 		$this->token   = 'easy_ip_blocker';
 
