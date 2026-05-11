@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#21272D"/>
+      <stop offset="100%" stop-color="#181C20"/>
+    </linearGradient>
+    <linearGradient id="shield-fill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFDC28"/>
+      <stop offset="100%" stop-color="#EFD01B"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="32" fill="url(#bg)"/>
+  <!-- Shield outline -->
+  <path d="M128 36 L196 64 L196 136 Q196 188 128 220 Q60 188 60 136 L60 64 Z"
+        fill="none" stroke="url(#shield-fill)" stroke-width="8" stroke-linejoin="round"/>
+  <!-- Inner shield lining -->
+  <path d="M128 56 L180 78 L180 132 Q180 174 128 200 Q76 174 76 132 L76 78 Z"
+        fill="url(#shield-fill)" opacity="0.15"/>
+  <!-- Prohibition circle (block symbol) -->
+  <circle cx="128" cy="124" r="36" fill="none" stroke="#FFDC28" stroke-width="7"/>
+  <line x1="102" y1="98" x2="154" y2="150" stroke="#FFDC28" stroke-width="7" stroke-linecap="round"/>
+</svg>
