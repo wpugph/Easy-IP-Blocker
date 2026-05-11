@@ -8,7 +8,7 @@
  * Author URI: https://carlalberto.code.blog/
  * Requires at least: 5.0
  * Tested up to: 6.8
- * Requires PHP: 8.4
+ * Requires PHP: 7.4
  *
  * Text Domain: easy-ip-blocker
  * Domain Path: /lang/
@@ -28,6 +28,12 @@ require_once 'includes/class-easy-ip-blocker-settings.php';
 
 // Load plugin libraries.
 require_once 'includes/lib/class-easy-ip-blocker-admin-api.php';
+
+// Register WP-CLI commands.
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+	require_once 'includes/class-easy-ip-blocker-cli.php';
+	WP_CLI::add_command( 'eib', 'Easy_IP_Blocker_CLI' );
+}
 
 /**
  * Returns the main instance of Easy_IP_Blocker to prevent the need to use globals.

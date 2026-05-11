@@ -452,6 +452,9 @@ class Easy_IP_Blocker_Admin_API {
 		'br'       => [],
 		'em'       => [],
 		'strong'   => [],
+		'code'     => [
+			'class' => [],
+		],
 		'th'       => [],
 	];
 

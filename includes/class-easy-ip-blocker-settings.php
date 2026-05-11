@@ -239,6 +239,46 @@ class Easy_IP_Blocker_Settings {
 				margin-top: 20px;
 			}
 
+			.eib-cli-card {
+				margin-top: 0;
+				border-top: none;
+			}
+			.eib-cli-title {
+				font-size: 14px;
+				font-weight: 600;
+				margin: 0 0 6px;
+				color: #1d2327;
+			}
+			.eib-cli-desc {
+				color: #646970;
+				font-size: 13px;
+				margin: 0 0 14px;
+			}
+			.eib-cli-table {
+				width: 100%;
+				border-collapse: collapse;
+			}
+			.eib-cli-table td {
+				padding: 8px 12px;
+				font-size: 13px;
+				border-top: 1px solid #f0f0f1;
+				vertical-align: middle;
+			}
+			.eib-cli-table tr:first-child td {
+				border-top: none;
+			}
+			.eib-cli-table td:first-child {
+				white-space: nowrap;
+				width: 1%;
+			}
+			.eib-cli-table code {
+				background: #f0f0f1;
+				padding: 3px 8px;
+				border-radius: 3px;
+				font-size: 12px;
+				font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+			}
+
 			.eib-footer {
 				background: #f6f7f7;
 				border: 1px solid #c3c4c7;
@@ -450,6 +490,20 @@ class Easy_IP_Blocker_Settings {
 		$html .= '<input name="Submit" type="submit" class="button-primary" value="' . esc_attr( __( 'Save Settings', 'easy-ip-blocker' ) ) . '" />' . "\n";
 		$html .= '</p>' . "\n";
 		$html .= '</form>' . "\n";
+		$html .= '</div>' . "\n";
+
+		// WP-CLI reference.
+		$html .= '<div class="eib-card eib-cli-card">' . "\n";
+		$html .= '<h3 class="eib-cli-title">' . esc_html__( 'WP-CLI Commands', 'easy-ip-blocker' ) . '</h3>' . "\n";
+		$html .= '<p class="eib-cli-desc">' . esc_html__( 'Manage your blocklist from the terminal for faster workflows and automation.', 'easy-ip-blocker' ) . '</p>' . "\n";
+		$html .= '<table class="eib-cli-table">' . "\n";
+		$html .= '<tr><td><code>wp eib add &lt;ip&gt;...</code></td><td>' . esc_html__( 'Add one or more IPs, CIDR ranges, or wildcards to the blocklist', 'easy-ip-blocker' ) . '</td></tr>' . "\n";
+		$html .= '<tr><td><code>wp eib remove &lt;ip&gt;...</code></td><td>' . esc_html__( 'Remove entries from the blocklist', 'easy-ip-blocker' ) . '</td></tr>' . "\n";
+		$html .= '<tr><td><code>wp eib delete &lt;ip&gt;...</code></td><td>' . esc_html__( 'Alias for remove', 'easy-ip-blocker' ) . '</td></tr>' . "\n";
+		$html .= '<tr><td><code>wp eib list</code></td><td>' . esc_html__( 'Show all blocked IPs and rules', 'easy-ip-blocker' ) . '</td></tr>' . "\n";
+		$html .= '<tr><td><code>wp eib clear --yes</code></td><td>' . esc_html__( 'Clear the entire blocklist', 'easy-ip-blocker' ) . '</td></tr>' . "\n";
+		$html .= '</table>' . "\n";
+		$html .= '<p class="eib-cli-desc" style="margin-top:12px;">' . esc_html__( 'All commands accept multiple entries in a single call, e.g.:', 'easy-ip-blocker' ) . ' <code>wp eib add 192.168.1.1 10.0.0.0/24 172.16.0.*</code></p>' . "\n";
 		$html .= '</div>' . "\n";
 
 		// Footer.
