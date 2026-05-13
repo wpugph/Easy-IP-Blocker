@@ -154,6 +154,11 @@ class Easy_IP_Blocker_Admin_API {
 		'code'     => array(
 			'class' => array(),
 		),
+		'dl'       => array(
+			'class' => array(),
+		),
+		'dt'       => array(),
+		'dd'       => array(),
 	);
 
 	/**

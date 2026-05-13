@@ -95,7 +95,7 @@ class Easy_IP_Blocker {
 	 * @param string $version Version parameter.
 	 * @return Easy_IP_Blocker Plugin instance.
 	 */
-	public static function instance( string $file = '', string $version = '2.0.2' ): self {
+	public static function instance( string $file = '', string $version = '2.1.0' ): self {
 		if ( is_null( self::$instance ) ) {
 			self::$instance = new self( $file, $version );
 		}
@@ -109,7 +109,7 @@ class Easy_IP_Blocker {
 	 * @param string $file    File constructor.
 	 * @param string $version Plugin version.
 	 */
-	public function __construct( string $file = '', string $version = '2.0.2' ) {
+	public function __construct( string $file = '', string $version = '2.1.0' ) {
 		$this->version = $version;
 		$this->token   = 'easy_ip_blocker';
 
@@ -221,11 +221,75 @@ class Easy_IP_Blocker {
 	}
 
 	/**
+	 * Mapping of IP source keys to $_SERVER header keys.
+	 *
+	 * @var array<string,string>
+	 */
+	private static $header_map = array(
+		'direct'        => 'REMOTE_ADDR',
+		'cloudflare'    => 'HTTP_CF_CONNECTING_IP',
+		'fastly'        => 'HTTP_FASTLY_CLIENT_IP',
+		'akamai'        => 'HTTP_TRUE_CLIENT_IP',
+		'cloudfront'    => 'HTTP_CLOUDFRONT_VIEWER_ADDRESS',
+		'sucuri'        => 'HTTP_X_SUCURI_CLIENTIP',
+		'generic_proxy' => 'HTTP_X_FORWARDED_FOR',
+	);
+
+	/**
+	 * Get the header map for use by other classes.
+	 *
+	 * @return array<string,string>
+	 */
+	public static function get_header_map(): array {
+		return self::$header_map;
+	}
+
+	/**
 	 * Get the visitor's IP address.
 	 *
 	 * @return string IP address.
 	 */
 	public function eib_get_ip(): string {
+		$source = get_option( 'eib_ip_source', 'auto' );
+
+		if ( 'auto' === $source ) {
+			return $this->eib_get_ip_legacy();
+		}
+
+		if ( 'custom' === $source ) {
+			$raw_header = get_option( 'eib_custom_header', '' );
+			$server_key = 'HTTP_' . strtoupper( str_replace( '-', '_', $raw_header ) );
+		} else {
+			$server_key = self::$header_map[ $source ] ?? 'REMOTE_ADDR';
+		}
+
+		$ip = '';
+		if ( ! empty( $_SERVER[ $server_key ] ) ) {
+			$ip = sanitize_text_field( wp_unslash( $_SERVER[ $server_key ] ) );
+		}
+
+		// CloudFront includes a port (e.g. 1.2.3.4:12345).
+		if ( 'cloudfront' === $source && $ip && false !== strrpos( $ip, ':' ) ) {
+			$ip = substr( $ip, 0, strrpos( $ip, ':' ) );
+		}
+
+		if ( str_contains( $ip, ',' ) ) {
+			$ip = trim( explode( ',', $ip )[0] );
+		}
+
+		if ( empty( $ip ) && 'direct' !== $source ) {
+			$ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ?? '' ) );
+		}
+
+		return trim( $ip );
+	}
+
+	/**
+	 * Legacy IP detection — checks multiple headers in cascade.
+	 *
+	 * @return string IP address.
+	 */
+	private function eib_get_ip_legacy(): string {
 		$ip = '';
 
 		if ( ! empty( $_SERVER['HTTP_CLIENT_IP'] ) ) {
