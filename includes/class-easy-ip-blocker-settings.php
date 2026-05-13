@@ -258,6 +258,75 @@ class Easy_IP_Blocker_Settings {
 				font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 			}
 
+			.eib-tabs {
+				margin: 0;
+				border-bottom: 1px solid #c3c4c7;
+				padding: 0;
+			}
+			.eib-tabs .nav-tab {
+				border-bottom: none;
+				margin-bottom: -1px;
+			}
+			.eib-tabs .nav-tab-active {
+				background: #fff;
+				border-bottom: 1px solid #fff;
+			}
+
+			.eib-tooltip-section {
+				margin-top: 20px;
+				padding-top: 16px;
+				border-top: 1px solid #f0f0f1;
+			}
+			.eib-tooltip-title {
+				font-size: 14px;
+				font-weight: 600;
+				margin: 0 0 12px;
+				color: #1d2327;
+				display: flex;
+				align-items: center;
+				gap: 4px;
+			}
+			.eib-tooltip-icon {
+				color: #2271b1;
+				font-size: 18px;
+			}
+			.eib-tooltip-list {
+				margin: 0;
+			}
+			.eib-tooltip-list dt {
+				font-weight: 600;
+				font-size: 13px;
+				color: #1d2327;
+				margin: 12px 0 2px;
+			}
+			.eib-tooltip-list dt:first-child {
+				margin-top: 0;
+			}
+			.eib-tooltip-list dd {
+				margin: 0 0 0 0;
+				padding: 0;
+				color: #646970;
+				font-size: 13px;
+				line-height: 1.5;
+			}
+
+			.eib-detection-card {
+				background: #fcf9e8;
+				border-left: 4px solid #dba617;
+				border-top: none;
+				padding: 16px 28px;
+			}
+			.eib-detection-card code {
+				background: #f0f0f1;
+				padding: 2px 6px;
+				border-radius: 3px;
+				font-size: 12px;
+			}
+			.eib-detection-match {
+				background: #edfaef;
+				border-left-color: #00a32a;
+			}
+
 			.eib-footer {
 				background: #f6f7f7;
 				border: 1px solid #c3c4c7;
@@ -283,6 +352,19 @@ class Easy_IP_Blocker_Settings {
 		wp_register_style( $this->parent->token . '-admin', false, array(), $this->parent->version );
 		wp_enqueue_style( $this->parent->token . '-admin' );
 		wp_add_inline_style( $this->parent->token . '-admin', $css );
+
+		$js = '
+			jQuery(function($) {
+				var $select = $("#ip_source");
+				var $customRow = $("#custom_header").closest("tr");
+				function toggleCustom() {
+					$customRow.toggle($select.val() === "custom");
+				}
+				$select.on("change", toggleCustom);
+				toggleCustom();
+			});
+		';
+		wp_add_inline_script( $this->parent->token . '-settings-js', $js );
 	}
 
 	/**
@@ -304,8 +386,8 @@ class Easy_IP_Blocker_Settings {
 	 */
 	private function settings_fields(): array {
 
-		$settings['standard'] = array(
-			'title'       => __( 'Settings', 'easy-ip-blocker' ),
+		$settings['blocklist'] = array(
+			'title'       => __( 'Blocklist', 'easy-ip-blocker' ),
 			'description' => __( 'Block visitors by IP address, CIDR range, or wildcard pattern.', 'easy-ip-blocker' ),
 			'fields'      => array(
 				array(
@@ -315,6 +397,39 @@ class Easy_IP_Blocker_Settings {
 					'type'        => 'textarea',
 					'default'     => '',
 					'placeholder' => __( "# Exact IP\n192.168.1.1\n\n# CIDR range\n10.0.0.0/24\n\n# Wildcard\n172.16.*.*", 'easy-ip-blocker' ),
+				),
+			),
+		);
+
+		$settings['settings'] = array(
+			'title'       => __( 'Settings', 'easy-ip-blocker' ),
+			'description' => __( 'Configure how the plugin detects visitor IP addresses.', 'easy-ip-blocker' ),
+			'fields'      => array(
+				array(
+					'id'          => 'ip_source',
+					'label'       => __( 'IP Detection Method', 'easy-ip-blocker' ),
+					'description' => __( 'Select how the visitor IP address is determined. Choose your CDN or proxy, or use "Custom header" to specify your own.', 'easy-ip-blocker' ),
+					'type'        => 'select',
+					'options'     => array(
+						'auto'          => __( 'Auto (legacy — trusts multiple headers)', 'easy-ip-blocker' ),
+						'direct'        => __( 'Direct (no proxy) — REMOTE_ADDR only', 'easy-ip-blocker' ),
+						'cloudflare'    => __( 'Cloudflare — CF-Connecting-IP', 'easy-ip-blocker' ),
+						'fastly'        => __( 'Fastly — Fastly-Client-IP', 'easy-ip-blocker' ),
+						'akamai'        => __( 'Akamai — True-Client-IP', 'easy-ip-blocker' ),
+						'cloudfront'    => __( 'AWS CloudFront — CloudFront-Viewer-Address', 'easy-ip-blocker' ),
+						'sucuri'        => __( 'Sucuri — X-Sucuri-ClientIP', 'easy-ip-blocker' ),
+						'generic_proxy' => __( 'Generic proxy — X-Forwarded-For', 'easy-ip-blocker' ),
+						'custom'        => __( 'Custom header', 'easy-ip-blocker' ),
+					),
+					'default'     => 'auto',
+				),
+				array(
+					'id'          => 'custom_header',
+					'label'       => __( 'Custom Header Name', 'easy-ip-blocker' ),
+					'description' => __( 'Enter the HTTP header name your proxy sets (e.g. X-Real-IP). Only used when "Custom header" is selected above.', 'easy-ip-blocker' ),
+					'type'        => 'text',
+					'default'     => '',
+					'placeholder' => 'X-Real-IP',
 				),
 			),
 		);
@@ -344,9 +459,14 @@ class Easy_IP_Blocker_Settings {
 			$current_section = sanitize_text_field( wp_unslash( $_GET['tab'] ) );
 		}
 
+		if ( ! $current_section ) {
+			$keys            = array_keys( $this->settings );
+			$current_section = $keys[0];
+		}
+
 		foreach ( $this->settings as $section => $data ) {
 
-			if ( $current_section && $current_section !== $section ) {
+			if ( $current_section !== $section ) {
 				continue;
 			}
 
@@ -373,10 +493,6 @@ class Easy_IP_Blocker_Settings {
 						'prefix' => $this->base,
 					)
 				);
-			}
-
-			if ( ! $current_section ) {
-				break;
 			}
 		}
 	}
@@ -418,19 +534,20 @@ class Easy_IP_Blocker_Settings {
 		$html .= '</div>' . "\n";
 		$html .= '</div>' . "\n";
 
+		$active_tab = $tab;
+		if ( ! $active_tab && is_array( $this->settings ) ) {
+			$keys       = array_keys( $this->settings );
+			$active_tab = $keys[0];
+		}
+
 		if ( is_array( $this->settings ) && 1 < count( $this->settings ) ) {
 
-			$html .= '<h2 class="nav-tab-wrapper">' . "\n";
+			$html .= '<h2 class="nav-tab-wrapper eib-tabs">' . "\n";
 
-			$c = 0;
 			foreach ( $this->settings as $section => $data ) {
 
 				$class = 'nav-tab';
-				if ( ! $tab ) {
-					if ( 0 === $c ) {
-						$class .= ' nav-tab-active';
-					}
-				} elseif ( $section === $tab ) {
+				if ( $section === $active_tab ) {
 					$class .= ' nav-tab-active';
 				}
 
@@ -440,11 +557,35 @@ class Easy_IP_Blocker_Settings {
 				}
 
 				$html .= '<a href="' . esc_url( $tab_link ) . '" class="' . esc_attr( $class ) . '">' . esc_html( $data['title'] ) . '</a>' . "\n";
-
-				++$c;
 			}
 
 			$html .= '</h2>' . "\n";
+		}
+
+		if ( 'settings' === $active_tab ) {
+			$detection    = $this->detect_cdn();
+			$current_src  = get_option( 'eib_ip_source', 'auto' );
+			$is_match     = ( $current_src === $detection['detected'] );
+			$card_class   = $is_match ? 'eib-detection-card eib-detection-match' : 'eib-detection-card';
+
+			$html .= '<div class="eib-card ' . esc_attr( $card_class ) . '">' . "\n";
+			$html .= '<p><strong>' . esc_html__( 'CDN / Proxy Detection', 'easy-ip-blocker' ) . ':</strong> ';
+
+			if ( $is_match && 'auto' !== $current_src ) {
+				$html .= esc_html__( 'Your current setting matches the detected configuration.', 'easy-ip-blocker' );
+			} elseif ( 'direct' === $detection['detected'] ) {
+				$html .= esc_html__( 'No CDN or proxy headers detected. If your server connects directly to visitors, select "Direct (no proxy)" below.', 'easy-ip-blocker' );
+			} else {
+				$html .= sprintf(
+					/* translators: 1: header name, 2: CDN/proxy name */
+					esc_html__( 'We detected the %1$s header, which indicates %2$s. We recommend selecting "%2$s" as your IP Detection Method below.', 'easy-ip-blocker' ),
+					'<code>' . esc_html( $detection['header'] ) . '</code>',
+					'<strong>' . esc_html( $detection['label'] ) . '</strong>'
+				);
+			}
+
+			$html .= '</p>' . "\n";
+			$html .= '</div>' . "\n";
 		}
 
 		$html .= '<div class="eib-card">' . "\n";
@@ -455,6 +596,10 @@ class Easy_IP_Blocker_Settings {
 		do_settings_sections( $this->parent->token . '_settings' );
 		$html .= ob_get_clean();
 
+		if ( 'settings' === $active_tab ) {
+			$html .= $this->render_ip_source_tooltips();
+		}
+
 		$html .= '<p class="submit">' . "\n";
 		$html .= '<input type="hidden" name="tab" value="' . esc_attr( $tab ) . '" />' . "\n";
 		$html .= '<input name="Submit" type="submit" class="button-primary" value="' . esc_attr__( 'Save Settings', 'easy-ip-blocker' ) . '" />' . "\n";
@@ -462,18 +607,20 @@ class Easy_IP_Blocker_Settings {
 		$html .= '</form>' . "\n";
 		$html .= '</div>' . "\n";
 
-		$html .= '<div class="eib-card eib-cli-card">' . "\n";
-		$html .= '<h3 class="eib-cli-title">' . esc_html__( 'WP-CLI Commands', 'easy-ip-blocker' ) . '</h3>' . "\n";
-		$html .= '<p class="eib-cli-desc">' . esc_html__( 'Manage your blocklist from the terminal for faster workflows and automation.', 'easy-ip-blocker' ) . '</p>' . "\n";
-		$html .= '<table class="eib-cli-table">' . "\n";
-		$html .= '<tr><td><code>wp eib add &lt;ip&gt;...</code></td><td>' . esc_html__( 'Add one or more IPs, CIDR ranges, or wildcards to the blocklist', 'easy-ip-blocker' ) . '</td></tr>' . "\n";
-		$html .= '<tr><td><code>wp eib remove &lt;ip&gt;...</code></td><td>' . esc_html__( 'Remove entries from the blocklist', 'easy-ip-blocker' ) . '</td></tr>' . "\n";
-		$html .= '<tr><td><code>wp eib delete &lt;ip&gt;...</code></td><td>' . esc_html__( 'Alias for remove', 'easy-ip-blocker' ) . '</td></tr>' . "\n";
-		$html .= '<tr><td><code>wp eib list</code></td><td>' . esc_html__( 'Show all blocked IPs and rules', 'easy-ip-blocker' ) . '</td></tr>' . "\n";
-		$html .= '<tr><td><code>wp eib clear --yes</code></td><td>' . esc_html__( 'Clear the entire blocklist', 'easy-ip-blocker' ) . '</td></tr>' . "\n";
-		$html .= '</table>' . "\n";
-		$html .= '<p class="eib-cli-desc" style="margin-top:12px;">' . esc_html__( 'All commands accept multiple entries in a single call, e.g.:', 'easy-ip-blocker' ) . ' <code>wp eib add 192.168.1.1 10.0.0.0/24 172.16.0.*</code></p>' . "\n";
-		$html .= '</div>' . "\n";
+		if ( 'blocklist' === $active_tab || '' === $tab ) {
+			$html .= '<div class="eib-card eib-cli-card">' . "\n";
+			$html .= '<h3 class="eib-cli-title">' . esc_html__( 'WP-CLI Commands', 'easy-ip-blocker' ) . '</h3>' . "\n";
+			$html .= '<p class="eib-cli-desc">' . esc_html__( 'Manage your blocklist from the terminal for faster workflows and automation.', 'easy-ip-blocker' ) . '</p>' . "\n";
+			$html .= '<table class="eib-cli-table">' . "\n";
+			$html .= '<tr><td><code>wp eib add &lt;ip&gt;...</code></td><td>' . esc_html__( 'Add one or more IPs, CIDR ranges, or wildcards to the blocklist', 'easy-ip-blocker' ) . '</td></tr>' . "\n";
+			$html .= '<tr><td><code>wp eib remove &lt;ip&gt;...</code></td><td>' . esc_html__( 'Remove entries from the blocklist', 'easy-ip-blocker' ) . '</td></tr>' . "\n";
+			$html .= '<tr><td><code>wp eib delete &lt;ip&gt;...</code></td><td>' . esc_html__( 'Alias for remove', 'easy-ip-blocker' ) . '</td></tr>' . "\n";
+			$html .= '<tr><td><code>wp eib list</code></td><td>' . esc_html__( 'Show all blocked IPs and rules', 'easy-ip-blocker' ) . '</td></tr>' . "\n";
+			$html .= '<tr><td><code>wp eib clear --yes</code></td><td>' . esc_html__( 'Clear the entire blocklist', 'easy-ip-blocker' ) . '</td></tr>' . "\n";
+			$html .= '</table>' . "\n";
+			$html .= '<p class="eib-cli-desc" style="margin-top:12px;">' . esc_html__( 'All commands accept multiple entries in a single call, e.g.:', 'easy-ip-blocker' ) . ' <code>wp eib add 192.168.1.1 10.0.0.0/24 172.16.0.*</code></p>' . "\n";
+			$html .= '</div>' . "\n";
+		}
 
 		$html .= '<div class="eib-footer">' . "\n";
 		$html .= '<p>' . wp_kses(
@@ -499,6 +646,111 @@ class Easy_IP_Blocker_Settings {
 
 		$allowed_html = $this->parent->admin->allowed_htmls;
 		echo wp_kses( $html, $allowed_html );
+	}
+
+	/**
+	 * Render tooltip reference table explaining each IP detection method.
+	 *
+	 * @return string HTML output.
+	 */
+	private function render_ip_source_tooltips(): string {
+		$methods = array(
+			array(
+				'label' => __( 'Auto (legacy)', 'easy-ip-blocker' ),
+				'desc'  => __( 'Checks HTTP_CLIENT_IP, X-Forwarded-For, then REMOTE_ADDR in order. Easy to set up but less secure — attackers can spoof headers to bypass blocking.', 'easy-ip-blocker' ),
+			),
+			array(
+				'label' => __( 'Direct (no proxy)', 'easy-ip-blocker' ),
+				'desc'  => __( 'Uses REMOTE_ADDR only. The most secure option when your server connects directly to visitors with no CDN or reverse proxy in between.', 'easy-ip-blocker' ),
+			),
+			array(
+				'label' => __( 'Cloudflare', 'easy-ip-blocker' ),
+				'desc'  => __( 'Reads the CF-Connecting-IP header set by Cloudflare. This contains the true visitor IP. Only trust this if your site is actually behind Cloudflare.', 'easy-ip-blocker' ),
+			),
+			array(
+				'label' => __( 'Fastly', 'easy-ip-blocker' ),
+				'desc'  => __( 'Reads the Fastly-Client-IP header. Fastly sets this to the downstream client IP at the edge. Use this if Fastly is your CDN.', 'easy-ip-blocker' ),
+			),
+			array(
+				'label' => __( 'Akamai', 'easy-ip-blocker' ),
+				'desc'  => __( 'Reads the True-Client-IP header. Akamai sets this at the edge server. Note: Cloudflare Enterprise also supports this header.', 'easy-ip-blocker' ),
+			),
+			array(
+				'label' => __( 'AWS CloudFront', 'easy-ip-blocker' ),
+				'desc'  => __( 'Reads the CloudFront-Viewer-Address header. This includes a port suffix (e.g. 1.2.3.4:54321) which is automatically stripped.', 'easy-ip-blocker' ),
+			),
+			array(
+				'label' => __( 'Sucuri', 'easy-ip-blocker' ),
+				'desc'  => __( 'Reads the X-Sucuri-ClientIP header. Use this if your site is behind the Sucuri WAF/CDN firewall.', 'easy-ip-blocker' ),
+			),
+			array(
+				'label' => __( 'Generic proxy', 'easy-ip-blocker' ),
+				'desc'  => __( 'Reads X-Forwarded-For, which is the standard header for proxies and load balancers. Takes the first IP in the chain. Can be spoofed — only use when you trust the proxy.', 'easy-ip-blocker' ),
+			),
+			array(
+				'label' => __( 'Custom header', 'easy-ip-blocker' ),
+				'desc'  => __( 'Specify any HTTP header name your proxy sets (e.g. X-Real-IP). Use this for Nginx, HAProxy, or any non-standard proxy configuration.', 'easy-ip-blocker' ),
+			),
+		);
+
+		$html  = '<div class="eib-tooltip-section">' . "\n";
+		$html .= '<h3 class="eib-tooltip-title">';
+		$html .= '<span class="dashicons dashicons-info-outline eib-tooltip-icon"></span> ';
+		$html .= esc_html__( 'IP Detection Methods Explained', 'easy-ip-blocker' );
+		$html .= '</h3>' . "\n";
+		$html .= '<dl class="eib-tooltip-list">' . "\n";
+
+		foreach ( $methods as $method ) {
+			$html .= '<dt>' . esc_html( $method['label'] ) . '</dt>' . "\n";
+			$html .= '<dd>' . esc_html( $method['desc'] ) . '</dd>' . "\n";
+		}
+
+		$html .= '</dl>' . "\n";
+		$html .= '</div>' . "\n";
+
+		return $html;
+	}
+
+	/**
+	 * Detect CDN/proxy by checking for known headers in the current request.
+	 *
+	 * @return array{detected: string, header: string}
+	 */
+	private function detect_cdn(): array {
+		$checks = array(
+			'cloudflare'    => 'HTTP_CF_CONNECTING_IP',
+			'fastly'        => 'HTTP_FASTLY_CLIENT_IP',
+			'akamai'        => 'HTTP_TRUE_CLIENT_IP',
+			'cloudfront'    => 'HTTP_CLOUDFRONT_VIEWER_ADDRESS',
+			'sucuri'        => 'HTTP_X_SUCURI_CLIENTIP',
+			'generic_proxy' => 'HTTP_X_FORWARDED_FOR',
+		);
+
+		$labels = array(
+			'cloudflare'    => 'Cloudflare',
+			'fastly'        => 'Fastly',
+			'akamai'        => 'Akamai',
+			'cloudfront'    => 'AWS CloudFront',
+			'sucuri'        => 'Sucuri',
+			'generic_proxy' => 'Generic proxy',
+		);
+
+		foreach ( $checks as $key => $server_key ) {
+			if ( ! empty( $_SERVER[ $server_key ] ) ) {
+				$header_name = str_replace( '_', '-', substr( $server_key, 5 ) );
+				return array(
+					'detected' => $key,
+					'header'   => $header_name,
+					'label'    => $labels[ $key ],
+				);
+			}
+		}
+
+		return array(
+			'detected' => 'direct',
+			'header'   => 'REMOTE_ADDR',
+			'label'    => 'Direct (no proxy)',
+		);
 	}
 
 	/**
